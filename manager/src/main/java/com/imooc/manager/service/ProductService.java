@@ -76,4 +76,20 @@ public class ProductService {
         Assert.isTrue(BigDecimal.valueOf(product.getStepAmount().longValue()).compareTo(product.getStepAmount()) == 0, "投资步长需为整数");
 
     }
+
+    /**
+     * 查询单个产品
+     * @param id 产品编号
+     * @return
+     */
+    public Product findOne(String id){
+        Assert.notNull(id, "需要产品编号参数");
+        LOG.debug("查询单个产品, id={}", id);
+
+        Product product = repository.findOne(id);
+
+        LOG.debug("查询单个产品,结果={}", product);
+
+        return product;
+    }
 }
