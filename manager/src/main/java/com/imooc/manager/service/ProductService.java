@@ -3,14 +3,21 @@ package com.imooc.manager.service;
 import com.imooc.entity.Product;
 import com.imooc.entity.enums.ProductStatus;
 import com.imooc.manager.repositories.ProductRepository;
+import javassist.expr.Expr;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import javax.persistence.criteria.*;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 /**
  * 产品服务类
@@ -26,7 +33,7 @@ public class ProductService {
         LOG.debug("创建产品，参数:{}", product);
         // 数据校验
         checkProduct(product);
-        
+
         // 设置默认值
         setDefault(product);
         Product result = repository.save(product);
@@ -65,6 +72,7 @@ public class ProductService {
      * 1. 非空数据
      * 2. 收益率要0-30以内
      * 3. 投资步长需为整数
+     *
      * @param product
      */
     private void checkProduct(Product product) {
@@ -79,10 +87,11 @@ public class ProductService {
 
     /**
      * 查询单个产品
+     *
      * @param id 产品编号
      * @return
      */
-    public Product findOne(String id){
+    public Product findOne(String id) {
         Assert.notNull(id, "需要产品编号参数");
         LOG.debug("查询单个产品, id={}", id);
 
@@ -91,5 +100,56 @@ public class ProductService {
         LOG.debug("查询单个产品,结果={}", product);
 
         return product;
+    }
+
+    /**
+     * 分页查询产品
+     *
+     * @param idList
+     * @param minRewardRate
+     * @param maxRewardRate
+     * @param statusList
+     * @param pageable
+     * @return
+     */
+    public Page<Product> query(List<String> idList,
+                               BigDecimal minRewardRate, BigDecimal maxRewardRate,
+                               List<String> statusList,
+                               Pageable pageable) {
+
+        LOG.debug("查询产品,idList={},minRewardRate={},maxRewardRate={},statusList={},pageable={}", idList, minRewardRate, maxRewardRate, statusList, pageable);
+        Specification<Product> specification = new Specification<Product>() {
+            @Override
+            public Predicate toPredicate(Root<Product> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
+                Expression<String> idCol = root.get("id");
+                Expression<BigDecimal> rewardRateCol = root.get("rewardRate");
+                Expression<String> statusCol = root.get("status");
+                List<Predicate> predicates = new ArrayList<>();
+
+                if (idList != null && idList.size() > 0) {
+                    predicates.add(idCol.in(idList));
+                }
+
+                if (BigDecimal.ZERO.compareTo(minRewardRate) < 0) {
+                    predicates.add(cb.ge(rewardRateCol, minRewardRate));
+                }
+
+                if (BigDecimal.ZERO.compareTo(maxRewardRate) < 0) {
+                    predicates.add(cb.le(rewardRateCol, maxRewardRate));
+                }
+
+                if (statusList != null && statusList.size() > 0) {
+                    predicates.add(statusCol.in(statusList));
+                }
+
+                query.where(predicates.toArray(new Predicate[0]));
+                return null;
+            }
+        };
+
+        Page<Product> page = repository.findAll(specification, pageable);
+        LOG.debug("查询产品,结果={}", page);
+
+        return page;
     }
 }
