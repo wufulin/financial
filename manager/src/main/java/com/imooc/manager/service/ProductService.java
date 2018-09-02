@@ -4,7 +4,6 @@ import com.imooc.entity.Product;
 import com.imooc.entity.enums.ProductStatus;
 import com.imooc.manager.error.ErrorEnum;
 import com.imooc.manager.repositories.ProductRepository;
-import javassist.expr.Expr;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
